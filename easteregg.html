@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="sk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ročníkový projekt — Terminal</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #000000;
+      --text: rgb(70, 196, 70);
+      --muted: #3ca63c;
+      --accent: rgb(82, 255, 82);
+      --glass: rgba(0,255,0,0.03);
+      --terminal-width: 820px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+
+    body {
+      background: radial-gradient(ellipse at 10% 10%, rgba(0,255,0,0.02) 0%, transparent 15%),
+                  linear-gradient(#000000, #000000);
+      color: var(--text);
+      font-family: "IBM Plex Mono", monospace;
+      font-weight: 400;
+      padding: 32px;
+      line-height: 1.5;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .terminal {
+      width: min(96%, var(--terminal-width));
+      border: 2px solid rgba(0,128,0,0.6);
+      padding: 20px 22px;
+      border-radius: 6px;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          rgba(0,255,0,0.01) 0px,
+          rgba(0,255,0,0.01) 1px,
+          rgba(0,0,0,0) 1px,
+          rgba(0,0,0,0) 3px
+        ),
+        linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.95));
+      box-shadow:
+        0 0 40px rgba(0,255,0,0.06),
+        inset 0 0 40px rgba(0,255,0,0.015);
+      overflow: hidden;
+    }
+
+    /* Title bar */
+    .titlebar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      user-select: none;
+    }
+    .dots {
+      display: flex;
+      gap: 6px;
+    }
+    .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: linear-gradient(180deg, #004400, #00ff44 60%);
+      box-shadow: 0 0 10px rgba(0,255,0,0.25);
+      border: 1px solid rgba(0,255,0,0.25);
+    }
+    .title {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 14px;
+      font-family: "IBM Plex Mono", monospace;
+      opacity: 0.9;
+    }
+
+    /* Headings */
+    h1 {
+      font-family: "VT323", monospace;
+      font-size: 46px;
+      letter-spacing: 1px;
+      margin: 6px 0 14px;
+      color: var(--text);
+      text-shadow: 0 0 10px rgba(82,255,82,0.12), 0 0 2px rgba(82,255,82,0.08);
+    }
+    h3 {
+      font-size: 22px;
+      text-align: right;
+      color: var(--muted);
+      margin-top: 8px;
+      font-weight: 500;
+    }
+
+    .content { max-width: 760px; margin: 0 auto; }
+
+    p, li, a {
+      font-size: 15px;
+      color: var(--text);
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: #aaffaa; text-decoration: underline; }
+
+    ul { margin-left: 18px; margin-top: 8px; }
+    li { margin: 6px 0; }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    /* Panels */
+    .panel {
+      border: 1px solid rgba(0,255,0,0.08);
+      padding: 14px 16px;
+      margin-top: 12px;
+      border-radius: 6px;
+      background: linear-gradient(180deg, rgba(0,255,0,0.015), rgba(0,255,0,0.008));
+      box-shadow: inset 0 0 16px rgba(0,255,0,0.02);
+    }
+
+    .panel p {
+      margin-bottom: 7px;
+    }
+
+    .panel strong {
+      color: var(--accent);
+      font-weight: 500;
+      display: inline-block;
+      min-width: 180px;
+      opacity: 0.85;
+    }
+
+    /* Loader */
+    .loader {
+      width: 40px;
+      aspect-ratio: 1;
+      border: 2px solid rgba(82,255,82,0.12);
+      color: var(--text);
+      background:
+        radial-gradient(circle 3px, currentColor 95%, #0000),
+        linear-gradient(currentColor 50%, #0000 0) 50% / 3px 80% no-repeat,
+        linear-gradient(90deg, currentColor 50%, #0000 0) 50% / 60% 3px no-repeat;
+      position: relative;
+      border-radius: 4px;
+      filter: drop-shadow(0 0 8px rgba(82,255,82,0.14));
+    }
+    .loader:before {
+      content: "";
+      position: absolute;
+      height: 50px;
+      inset: 100% 10% auto;
+      background:
+        radial-gradient(circle closest-side at 50% calc(100% - 10px), currentColor 94%, #0000),
+        linear-gradient(currentColor 0 0) top/3px 80% no-repeat;
+      transform-origin: top;
+      animation: l2 2s infinite cubic-bezier(.5,200,.5,-200);
+      opacity: 0.9;
+    }
+    @keyframes l2 { 100% { transform: rotate(0.4deg); } }
+
+    /* Prompt line */
+    .prompt {
+      display: block;
+      margin-top: 14px;
+      padding: 8px 10px;
+      font-size: 15px;
+      color: var(--text);
+      border: 1px dashed rgba(0,255,0,0.04);
+      border-radius: 4px;
+    }
+    .cursor {
+      display: inline-block;
+      width: 10px;
+      height: 18px;
+      background: var(--text);
+      margin-left: 8px;
+      vertical-align: middle;
+      animation: blink 1s steps(2, end) infinite;
+      box-shadow: 0 0 8px rgba(82,255,82,0.25);
+    }
+    @keyframes blink { 50% { opacity: 0 } }
+
+    footer {
+      margin-top: 20px;
+      text-align: right;
+      color: var(--muted);
+      font-size: 13px;
+      font-style: italic;
+    }
+
+    footer span.comment {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 13px;
+      color: var(--accent);
+      opacity: 0.8;
+    }
+
+    pre.ascii {
+      margin-top: 16px;
+      color: var(--text);
+      background: transparent;
+      font-family: "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1;
+      padding: 6px 10px;
+      border-radius: 4px;
+    }
+
+    @media (max-width: 520px) {
+      h1 { font-size: 34px; }
+      .terminal { padding: 14px; }
+      .panel strong { min-width: 140px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal" role="region" aria-label="Terminal-style project page">
+    <div class="titlebar">
+      <div class="dots" aria-hidden="true">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+      <div class="title">vscode-openproject — terminal view</div>
+    </div>
+
+    <div class="content">
+      <div class="row">
+        <h1>Ročníkový projekt</h1>
+        <div class="loader" aria-hidden="true"></div>
+      </div>
+
+      <section class="panel">
+        <p><strong>Názov:</strong> Visual Studio Code rozšírenie pre OpenProject</p>
+        <p><strong>Meno študenta:</strong> Nykyta Rozhkov</p>
+        <p><strong>Meno kolegy:</strong> <a href="http://www.st.fmph.uniba.sk/~prytula1/" target="_blank">Denys Prytula</a></p>
+        <p><strong>Mail študenta:</strong> <a href="mailto:rozhkov2@uniba.sk">rozhkov2@uniba.sk</a></p>
+        <p><strong>Mail kolegy:</strong> <a href="mailto:prytula1@uniba.sk">prytula1@uniba.sk</a></p>
+        <p><strong>Meno školiteľa:</strong> RNDr. Richard Ostertág, PhD</p>
+        <p><strong>Mail školiteľa:</strong> <a href="mailto:Richard.Ostertag@fmph.uniba.sk">Richard.Ostertag@fmph.uniba.sk</a></p>
+      </section>
+
+      <div class="panel">
+        <h3 style="text-align:left; color:var(--muted); margin-bottom:8px;">Funkcie rozšírenia:</h3>
+        <ul>
+          <li>Prehľad úloh a projektov</li>
+          <li>Sledovanie času stráveného na úlohách</li>
+          <li>Vytvorenie branche pre úlohu</li>
+        </ul>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:12px; align-items:flex-end;">
+        <div style="flex:1">
+          <h3><strong>Repozitár:</strong> <a href="https://github.com/Solowayy/vscode-openproject" target="_blank">>> GitHub</a></h3>
+          <h3><strong>Report (Zimný semester):</strong></h3>
+          <h3><strong>Report (Letný semester):</strong></h3>
+        </div>
+      </div>
+
+      <div style="min-width:220px; text-align:left;">
+        <div class="prompt">> build: ready <span class="cursor" aria-hidden="true"></span></div>
+      </div>
+
+      <pre class="ascii" aria-hidden="true">
+   ( (
+    ) )
+  ........
+  |      |]
+  \      /
+   `----'
+      </pre>
+
+      <footer><span class="comment">&lt;!-- project z kolegou robime ako tym C|_| --&gt;</span></footer>
+    </div>
+  </div>
+</body>
+</html>
